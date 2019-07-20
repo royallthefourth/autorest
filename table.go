@@ -66,7 +66,7 @@ func (t Table) prepareUpdate(inputBody []byte, userID interface{}, query sqrl.Up
 func (t Table) validReadColumns(cols []string) []string {
 	var out []string
 	for _, col := range cols { // Iterate the potentially pathological input only once.
-		if sliceContains(t.columns, col) {
+		if sliceContains(t.columns, col) || col == `or` || col == `and` {
 			out = append(out, col)
 		}
 	}

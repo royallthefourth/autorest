@@ -55,37 +55,20 @@ func deleteOrder(query sqrl.DeleteBuilder, t Table, r *http.Request) sqrl.Delete
 }
 
 func deleteWhere(query sqrl.DeleteBuilder, t Table, r *http.Request) (sqrl.DeleteBuilder, error) {
-	var err error = nil
 	whereClauses := 0
-	i := 0
-	columns := make([]string, len(r.URL.Query()))
-	for k := range r.URL.Query() {
-		columns[i] = k
-		i++
-	}
-	columns = t.validReadColumns(columns)
 
-	for column, values := range r.URL.Query() {
-		if sliceContains(columns, column) {
-			for _, rawCond := range values {
-				parsedCond, val := parseSimpleWhereCond(rawCond)
-				var cond string
-				if parsedCond == `in` || parsedCond == `not.in` {
-					if parsedCond == `not.in` {
-						query = query.Where(sqrl.NotEq{column: whereIn(val)})
-					} else {
-						query = query.Where(sqrl.Eq{column: whereIn(val)})
-					}
-				} else {
-					cond = urlToWhereCond(column, parsedCond)
-					sqlCond, val := rectifyArg(cond, val)
-					query = query.Where(sqlCond, val)
-				}
-				whereClauses++
-			}
+	for _, cond := range buildConds(t, r) {
+		if cond.Condition == `not.in` {
+			query = query.Where(sqrl.NotEq{cond.Column: whereIn(cond.Value)})
+		} else if cond.Condition == `in` {
+			query = query.Where(sqrl.Eq{cond.Column: whereIn(cond.Value)})
+		} else {
+			query = query.Where(cond.Condition, cond.Value)
 		}
+		whereClauses++
 	}
 
+	var err error = nil
 	if whereClauses == 0 {
 		err = errors.New(`DELETE operations must have at least one WHERE clause`)
 	}

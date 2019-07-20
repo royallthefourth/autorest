@@ -27,3 +27,24 @@ func TestWhereIn(t *testing.T) {
 		t.Errorf(`Expected [10 20 30] but got %+v`, vals)
 	}
 }
+
+func TestParensMatch(t *testing.T) {
+	tests := []struct{
+		in string
+		out bool
+	}{
+		{`(asdf`, false},
+		{`)asdf`, false},
+		{`(asdf)`, true},
+		{`((asdf))`, true},
+		{`(asdf))`, false},
+		{`(asd)f`, false},
+		{`(asd)f)`, false},
+	}
+
+	for _, test := range tests {
+		if parensMatch(test.in) != test.out {
+			t.Errorf(`Expected %t for %s`, test.out, test.in)
+		}
+	}
+}
